@@ -119,14 +119,7 @@ class Process extends Action {
          */
         try {
             
-            // get the curetn quote and match this wilt the session??
             
-            // we need to complet the quote, thi sonly makes sense if we have an exisiting sesion up
-            
-            // need to check for success or fail
-            
-            //die();
-            //
             //status=CANCELLED | SUCCESS
             $status = $this->getRequest()->getParam('status');
             
