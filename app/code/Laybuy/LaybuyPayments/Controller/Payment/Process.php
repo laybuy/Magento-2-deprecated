@@ -126,20 +126,28 @@ class Process extends Action {
             // need to check for success or fail
             
             //die();
+            //
+            //status=CANCELLED | SUCCESS
+            $status = $this->getRequest()->getParam('status');
             
-            
-            $this->validateQuote($quote);
-        
-            $this->orderPlace->execute($quote);
-        
-            /** @var \Magento\Framework\Controller\Result\Redirect $resultRedirect */
-            return $resultRedirect->setPath('checkout/onepage/success', ['_secure' => TRUE]);
+            if($status == 'SUCCESS'){
+                
+                $this->validateQuote($quote);
+    
+                $this->orderPlace->execute($quote);
+    
+                /** @var \Magento\Framework\Controller\Result\Redirect $resultRedirect */
+                return $resultRedirect->setPath('checkout/onepage/success', ['_secure' => TRUE]);
+                
+            }
             
         } catch (\Exception $e) {
             //$this->logger->debug(['error' => $e]);??
             $this->messageManager->addExceptionMessage($e, $e->getMessage());
         }
-    
+        
+        $this->messageManager->addNoticeMessage('Laybuy payment was Cancelled');
+        
         return $resultRedirect->setPath('checkout/cart', ['_secure' => TRUE]);
         
         
