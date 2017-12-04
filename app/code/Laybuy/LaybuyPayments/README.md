@@ -5,8 +5,8 @@ Laybuy payments integration module for Magento 2.
 ## System requirements
 This extension supports the following versions of Magento:
 
-*	Community Edition (CE) versions 2.1.x and 2.2.x
-*	Enterprise Edition (EE) versions 2.1.x and 2.2.x
+*	Community Edition (CE) versions 2.1.x
+*	Enterprise Edition (EE) versions 2.1.x
 
 ## Installation
 TODO
@@ -24,7 +24,7 @@ $ bin/magento setup:upgrade
 ## Authors, contributors and maintainers
 
 Author:
-- [carl Bowden](http://16hands.co.nz)
+- [Carl Bowden](http://16hands.co.nz)
 
 ## License
 Licensed under the Open Software License version 3.0
