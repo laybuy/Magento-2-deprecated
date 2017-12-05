@@ -11,7 +11,7 @@ use Laybuy\LaybuyPayments\Gateway\Http\Client\Laybuy;
 
 class ResponseCodeValidator extends AbstractValidator
 {
-    const RESULT_CODE = 'RESULT_CODE';
+    const RESULT_CODE = 'RESULT_CODE'; // from client
 
     /**
      * Performs validation of result code

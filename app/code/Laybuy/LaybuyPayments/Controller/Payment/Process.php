@@ -22,6 +22,7 @@ use Magento\Payment\Model\Method\Logger;
 
 use Laybuy\LaybuyPayments\Gateway\Config\Config;
 use Laybuy\LaybuyPayments\Model\Helper;
+use Laybuy\LaybuyPayments\Gateway\Http\Client\Laybuy;
 
 class Process extends Action {
     
@@ -30,8 +31,6 @@ class Process extends Action {
     const LAYBUY_SANDBOX_URL = 'https://sandbox-api.laybuy.com';
     
     const LAYBUY_RETURN = 'laybuypayments/payment/process';
-    
-
     
     /**
      * @var bool
@@ -119,16 +118,15 @@ class Process extends Action {
          */
         try {
             
-            
             //status=CANCELLED | SUCCESS
             $status = $this->getRequest()->getParam('status');
             
-            if($status == 'SUCCESS'){
+            if($status == Laybuy::SUCCESS){
                 
                 $this->validateQuote($quote);
     
                 $this->orderPlace->execute($quote);
-    
+                
                 /** @var \Magento\Framework\Controller\Result\Redirect $resultRedirect */
                 return $resultRedirect->setPath('checkout/onepage/success', ['_secure' => TRUE]);
                 

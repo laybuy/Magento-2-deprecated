@@ -9,6 +9,11 @@ use Magento\Payment\Gateway\Http\ClientInterface;
 use Magento\Payment\Gateway\Http\TransferInterface;
 use Magento\Payment\Model\Method\Logger;
 use Laybuy\LaybuyPayments\Gateway\Config\Config;
+use Magento\Checkout\Model\Session;
+
+use Magento\Quote\Model\QuoteFactory;
+use Magento\Sales\Model\OrderFactory;
+
 use Magento\Payment\Gateway\Http\Client\Zend as httpClient;
 use Magento\Framework\HTTP\ZendClientFactory;
 use Magento\Framework\HTTP\ZendClient;
@@ -17,8 +22,8 @@ use GuzzleHttp\Client;
 
 class Laybuy implements ClientInterface
 {
-    const SUCCESS = 1;
-    const FAILURE = 0;
+    const SUCCESS = 'SUCCESS';
+    const FAILURE = 'ERROR';
     
     const LAYBUY_LIVE_URL       = 'https://api.laybuy.com';
     const LAYBUY_SANDBOX_URL    = 'https://sandbox-api.laybuy.com';
@@ -67,16 +72,41 @@ class Laybuy implements ClientInterface
      * @var Logger
      */
     private $logger;
-
+    
+    /**
+     * @var Session
+     */
+    protected $checkoutSession;
+    
+    /**
+     * @var QuoteFactory
+     */
+    protected $quoteFactory;
+    
+    /**
+     * @var OrderFactory
+     */
+    protected $orderFactory;
+    
+    
     /**
      * @param Config $config
+     * @param Session $checkoutSession
+     * @param QuoteFactory $quoteFactory
+     * @param OrderFactory $orderFactory
      * @param Logger $logger
      */
     public function __construct(
         Config $config,
+        Session $checkoutSession,
+        QuoteFactory $quoteFactory,
+        OrderFactory $orderFactory,
         Logger $logger
     ) {
         $this->logger = $logger;
+        $this->checkoutSession = $checkoutSession;
+        $this->quoteFactory = $quoteFactory;
+        $this->orderFactory = $orderFactory;
         $this->config = $config;
     
         $this->logger->debug([__METHOD__ . ' TEST sandbox? ' => $this->config->getUseSandbox()]);
@@ -117,9 +147,8 @@ class Laybuy implements ClientInterface
         if($path == '/laybuypayments/payment/process') {
             $data = [];
             parse_str(parse_url($urlInterface->getCurrentUrl(), PHP_URL_QUERY), $data);
+            
             $this->logger->debug(['PHP_URL_QUERY process payment ' => $data]);
-            $result = $data['status'];
-          
             $this->logger->debug(['token form process payment ' => $data['token']]);
             
             $laybuy = new \stdClass();
@@ -130,19 +159,33 @@ class Laybuy implements ClientInterface
             $this->logger->debug(['confirm reposnse body' => $body]);
             
             
-            if ($body->result == 'SUCCESS') {
+            if ($body->result == Laybuy::SUCCESS ) {
     
                 $this->logger->debug(['reposnse body' => $body]);
- 
+                
+                // get the order so we can get the correct
+                $order_response = $client->restGet('/order/'. $body->orderId );
+    
+                $laybuy_order = json_decode($order_response->getBody());
+                $this->logger->debug(['get Laybuy Order reposnse' => $laybuy_order]);
+                
+               
                 return [
                     'ACTION'      => 'process',
-                    'TXN_ID'       => $body->orderId
+                    'TXN_ID'       => $body->orderId,
+                    'RESULT_CODE' => Laybuy::SUCCESS,
                 ];
             }
             else {
     
                 // $this->noLaybuyRedirectError($body);
                 $this->logger->debug(['FAILED TO GET returnURL' => $body]);
+                
+                return [
+                    'ACTION'      => 'process',
+                    'TXN_ID'      => NULL,
+                    'RESULT_CODE' => Laybuy::FAILURE,
+                ];
     
             }
             
@@ -153,7 +196,7 @@ class Laybuy implements ClientInterface
             $response = $client->restPost('/order/create', json_encode($transferObject->getBody()));
     
             $body = json_decode($response->getBody());
-            $this->logger->debug(['redirct reposnse body' => $body]);
+            $this->logger->debug(['redirect response body' => $body]);
     
             /* stdClass Object
                     (
@@ -163,16 +206,19 @@ class Laybuy implements ClientInterface
                     )
              */
     
-            if ($body->result == 'SUCCESS') {
+            if ($body->result == Laybuy::SUCCESS ) {
         
                 $this->logger->debug(['reposnse body' => $body]);
         
                 if (!$body->paymentUrl) {
                     // $this->noLaybuyRedirectError($body);
+                    $this->logger->debug(['FAILED TO GET returnURL' => $body]);
+                    
                 }
         
                 return [
-                    'ACTION'      =>  'redirect',
+                    'ACTION'      => 'redirect',
+                    'RESULT_CODE' => Laybuy::SUCCESS,
                     'TOKEN'       => $body->token,
                     'RETURN_URL'  => $body->paymentUrl,
                 ];
@@ -181,7 +227,7 @@ class Laybuy implements ClientInterface
         
                 // $this->noLaybuyRedirectError($body);
                 $this->logger->debug(['FAILED TO GET returnURL' => $body]);
-        
+                
             }
             
         }

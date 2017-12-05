@@ -18,7 +18,7 @@ class PaymentAction implements ArrayInterface
     {
         return [
             [
-                'value' => 'authorize',
+                'value' => 'authorize_capture',
                 'label' => __('Sale'),
             ]
         ];

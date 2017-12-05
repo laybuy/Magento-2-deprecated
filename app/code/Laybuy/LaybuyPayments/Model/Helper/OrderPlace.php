@@ -13,7 +13,7 @@ use Magento\Checkout\Model\Type\Onepage;
 use Magento\Quote\Api\CartManagementInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Checkout\Api\AgreementsValidatorInterface;
-
+use Magento\Sales\Model\OrderFactory;
 /**
  * Class OrderPlace
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -39,25 +39,34 @@ class OrderPlace extends AbstractHelper
      * @var Data
      */
     private $checkoutHelper;
-
+    
+    /**
+     * @var OrderFactory
+     */
+    protected $orderFactory;
+    
     /**
      * Constructor
      *
      * @param CartManagementInterface $cartManagement
      * @param AgreementsValidatorInterface $agreementsValidator
      * @param Session $customerSession
+     * @param OrderFactory $orderFactory
      * @param Data $checkoutHelper
      */
     public function __construct(
         CartManagementInterface $cartManagement,
         AgreementsValidatorInterface $agreementsValidator,
         Session $customerSession,
+        OrderFactory $orderFactory,
         Data $checkoutHelper
     ) {
         $this->cartManagement = $cartManagement;
         $this->agreementsValidator = $agreementsValidator;
         $this->customerSession = $customerSession;
+        $this->orderFactory = $orderFactory;
         $this->checkoutHelper = $checkoutHelper;
+        
     }
 
     /**
@@ -65,7 +74,7 @@ class OrderPlace extends AbstractHelper
      *
      * @param Quote $quote
      * @param array $agreement
-     * @return void
+     * @return int $order_id
      * @throws LocalizedException
      */
     public function execute(Quote $quote) {
@@ -77,6 +86,7 @@ class OrderPlace extends AbstractHelper
         $this->disabledQuoteAddressValidation($quote);
 
         $quote->collectTotals();
+        
         $this->cartManagement->placeOrder($quote->getId());
     }
 

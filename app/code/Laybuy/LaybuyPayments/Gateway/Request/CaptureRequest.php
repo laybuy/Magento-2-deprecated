@@ -8,15 +8,15 @@ namespace Laybuy\LaybuyPayments\Gateway\Request;
 use Magento\Payment\Gateway\ConfigInterface;
 use Magento\Payment\Gateway\Data\PaymentDataObjectInterface;
 use Magento\Payment\Gateway\Request\BuilderInterface;
+use Magento\Sales\Api\Data\OrderPaymentInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
-class AuthorizationRequest implements BuilderInterface
+class CaptureRequest implements BuilderInterface
 {
     /**
      * @var ConfigInterface
      */
     private $config;
-    
     
     /**
      * @var StoreManagerInterface
@@ -33,7 +33,7 @@ class AuthorizationRequest implements BuilderInterface
         ConfigInterface $config
     ) {
         $this->config = $config;
-        $this->storeManager = $storeManager;
+        $this->storeManage = $storeManager;
     }
 
     /**
@@ -50,36 +50,33 @@ class AuthorizationRequest implements BuilderInterface
             throw new \InvalidArgumentException('Payment data object should be provided');
         }
 
-        /**  @var PaymentDataObjectInterface $paymentDO */
+        /** @var PaymentDataObjectInterface $paymentDO */
         $paymentDO = $buildSubject['payment'];
-    
+
         $order = $paymentDO->getOrder();
-        $store = $this->storeManager->getStore();
-        //$payment = $paymentDO->getPayment();
-   
+        //$store = $this->storeManager->getStore();
+        $payment = $paymentDO->getPayment();
+    
         /* @var $urlInterface \Magento\Framework\UrlInterface */
         $urlInterface = \Magento\Framework\App\ObjectManager::getInstance()->get('Magento\Framework\UrlInterface');
-        $base_url = $urlInterface->getBaseUrl();
-        
-        //$address = $mage_order->getShippingAddress();
+        $base_url     = $urlInterface->getBaseUrl();
+
+        //build address details
         $address = $order->getBillingAddress();
-        
-        //$address->getFirstname()
-     
-        //$this->errors[] = 'This is another error.';
-        $laybuy          = new \stdClass();
+    
+        $laybuy = new \stdClass();
     
         $laybuy->amount    = number_format($order->getGrandTotalAmount(), 2);
         $laybuy->currency  = "NZD"; // New Zealand Dollars (NZD) is currently the only currency supported.
         $laybuy->returnUrl = $base_url . '/laybuypayments/payment/process'; //, ['_secure' => TRUE]);
-        
+    
         // BS $order->merchantReference = $quote->getId();
         $laybuy->merchantReference = $order->getOrderIncrementId();
     
         $laybuy->customer            = new \stdClass();
         $laybuy->customer->firstName = $address->getFirstname();
         $laybuy->customer->lastName  = $address->getLastname();
-        $laybuy->customer->email     = $address->getEmail() ; // $quote->getCustomerEmail();
+        $laybuy->customer->email     = $address->getEmail(); // $quote->getCustomerEmail();
     
         $phone = $address->getTelephone();
     
@@ -102,59 +99,20 @@ class AuthorizationRequest implements BuilderInterface
     
         $laybuy->items[0]              = new \stdClass();
         $laybuy->items[0]->id          = 1;
-        $laybuy->items[0]->description = "Purchase from " . $store->getName();
+        $laybuy->items[0]->description = "Purchase from " ;//. //$store->getName();
         $laybuy->items[0]->quantity    = 1;
-        $laybuy->items[0]->price       =  number_format($order->getGrandTotalAmount(), 2); // this can nerver to incorrect now
-        
-        return (array) $laybuy;
-        
-        
-        /*
-         * {
-                "amount":156.90,
-                "currency":"NZD",
-                "returnUrl":"https://www.merchantsite.com/confirm-payment?i=7437377",
-                "merchantReference":"17125026",
-                "customer": {
-                    "firstName":"Jenny",
-                    "lastName":"Smith",
-                    "email":"jenny.smith@laybuy.com",
-                    "phone":"0219876543"
-                },
-                "billingAddress": {
-                    "address1":"123 Crown Street",
-                    "city":"Auckland",
-                    "postcode":"1010",
-                    "country":"New Zealand",
-                },
-                "shippingAddress": {
-                    "name":"Timmy Smith",
-                    "address1":"Level 4, Goodsmiths Building",
-                    "address2":"123 Crown Street",
-                    "suburb":"Redvale",
-                    "city":"Auckland",
-                    "postcode":"1010",
-                    "country":"New Zealand",
-                    "phone":"097654321"
-                },
-                "items":[
-                    {
-                        "id":"4470356028717",
-                        "description":"Blue Widget",
-                        "quantity":2,
-                        "price":76.95
-                    },
-                    {
-                        "id":"SHIPPING",
-                        "description":"Shipping",
-                        "quantity":1,
-                        "price":3.00
-                    },
-                ]
-            }
-            
-         */
-        
-    }
+        $laybuy->items[0]->price       = number_format($order->getGrandTotalAmount(), 2); // this can nerver to incorrect now
     
+       
+        /*return [
+            'TXN_TYPE' => 'S',
+            'TXN_ID' => $payment->getLastTransId(),
+            'MERCHANT_KEY' => $this->config->getValue(
+                'merchant_gateway_key',
+                $order->getStoreId()
+            )
+        ];*/
+    
+        return (array) $laybuy;
+    }
 }

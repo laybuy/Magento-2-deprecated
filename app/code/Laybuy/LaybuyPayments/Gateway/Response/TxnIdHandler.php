@@ -32,8 +32,7 @@ class TxnIdHandler implements HandlerInterface
         
         /** @var $payment \Magento\Sales\Model\Order\Payment */
         $payment = $paymentDO->getPayment();
-
-
+        
        if($response['ACTION'] == 'redirect'){
     
            echo json_encode($response['RETURN_URL']);
@@ -43,9 +42,10 @@ class TxnIdHandler implements HandlerInterface
        elseif($response['ACTION'] == 'process'){
            $payment->setTransactionId($response['TXN_ID']);
            $payment->setIsTransactionClosed(TRUE);
+           
        }
      
-        // capture here
+      
        //throw new \InvalidArgumentException('Laybuy: Can not process action');
        
        
