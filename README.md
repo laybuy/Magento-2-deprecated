@@ -1,6 +1,6 @@
 
 
-![LAYBUY](https://laybuy.com)
+[LAYBUY](https://laybuy.com)
 
 Laybuy Payment Module for Magento 2
 ============================
