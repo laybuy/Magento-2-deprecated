@@ -66,7 +66,7 @@ class CaptureRequest implements BuilderInterface
     
         $laybuy = new \stdClass();
     
-        $laybuy->amount    = number_format($order->getGrandTotalAmount(), 2);
+        $laybuy->amount    = number_format($order->getGrandTotalAmount(), 2, '.', ''); // laybuy likes the .00 to be included
         $laybuy->currency  = "NZD"; // New Zealand Dollars (NZD) is currently the only currency supported.
         $laybuy->returnUrl = $base_url . '/laybuypayments/payment/process'; //, ['_secure' => TRUE]);
     
@@ -101,7 +101,7 @@ class CaptureRequest implements BuilderInterface
         $laybuy->items[0]->id          = 1;
         $laybuy->items[0]->description = "Purchase from " ;//. //$store->getName();
         $laybuy->items[0]->quantity    = 1;
-        $laybuy->items[0]->price       = number_format($order->getGrandTotalAmount(), 2); // this can nerver to incorrect now
+        $laybuy->items[0]->price       = number_format($order->getGrandTotalAmount(), 2, '.', ''); // laybuy likes the .00 to be included
     
        
         /*return [

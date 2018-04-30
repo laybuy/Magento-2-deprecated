@@ -113,7 +113,6 @@ class QuoteUpdater extends AbstractHelper
 
     /**
      * Update shipping address
-     * (PayPal doesn't provide detailed shipping info: prefix, suffix)
      *
      * @param Quote $quote
      * @param array $details
@@ -158,7 +157,7 @@ class QuoteUpdater extends AbstractHelper
         $billingAddress->setLastname($details['lastName']);
         $billingAddress->setEmail($details['email']);
 
-        // PayPal's address supposes not saving against customer account
+        
         $billingAddress->setSaveInAddressBook(false);
         $billingAddress->setSameAsBilling(false);
         $billingAddress->unsCustomerAddressId();
@@ -183,7 +182,6 @@ class QuoteUpdater extends AbstractHelper
         $address->setCountryId($addressData['countryCodeAlpha2']);
         $address->setPostcode($addressData['postalCode']);
 
-        // PayPal's address supposes not saving against customer account
         $address->setSaveInAddressBook(false);
         $address->setSameAsBilling(false);
         $address->setCustomerAddressId(null);

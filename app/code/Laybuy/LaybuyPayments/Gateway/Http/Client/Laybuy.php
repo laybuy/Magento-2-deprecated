@@ -133,18 +133,13 @@ class Laybuy implements ClientInterface
         /* @var $urlInterface \Magento\Framework\UrlInterface */
         $urlInterface = \Magento\Framework\App\ObjectManager::getInstance()->get('Magento\Framework\UrlInterface');
         
-        /*
-        echo "<pre>" . print_r($urlInterface->getCurrentUrl(), 1) . "</pre>";
-        echo "<pre>" . print_r($urlInterface->getRouteUrl(), 1) . "</pre>";
-        echo "<pre>" . print_r($urlInterface->getQueryParam('status'), 1) . "</pre>";
-        echo "<pre>" . print_r($urlInterface->, 1) . "</pre>";
-        */
+       
         $path = parse_url($urlInterface->getCurrentUrl(), PHP_URL_PATH);
     
         $this->logger->debug([' URL PATH ' => $path]);
         
-        // yes I know
-        if($path == '/laybuypayments/payment/process') {
+        
+        if($path === '/laybuypayments/payment/process') {
             $data = [];
             parse_str(parse_url($urlInterface->getCurrentUrl(), PHP_URL_QUERY), $data);
             
@@ -190,7 +185,6 @@ class Laybuy implements ClientInterface
             }
             
             
-            // TODO: fix fail
         }
         else {
             $response = $client->restPost('/order/create', json_encode($transferObject->getBody()));

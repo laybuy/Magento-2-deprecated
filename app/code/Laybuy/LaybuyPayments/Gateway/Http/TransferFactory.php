@@ -35,8 +35,9 @@ class TransferFactory implements TransferFactoryInterface
      */
     public function create(array $request) {
     
-       // $authHeader = 'Authorization: Basic ' . base64_encode($merchantId . ':' . $apiKey);
+        // $authHeader = 'Authorization: Basic ' . base64_encode($merchantId . ':' . $apiKey);
         
+        // not used, to review
         return $this->transferBuilder
             ->setBody($request)
             ->setMethod('POST')

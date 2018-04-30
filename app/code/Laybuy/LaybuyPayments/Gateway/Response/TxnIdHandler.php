@@ -36,7 +36,7 @@ class TxnIdHandler implements HandlerInterface
        if($response['ACTION'] == 'redirect'){
     
            echo json_encode($response['RETURN_URL']);
-           die(); // TODO: YES I know
+           die(); // ensure kockout listens to teh redirect
            
        }
        elseif($response['ACTION'] == 'process'){
