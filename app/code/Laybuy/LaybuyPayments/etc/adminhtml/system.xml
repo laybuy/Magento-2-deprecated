@@ -67,6 +67,14 @@
                     </depends>
                 </field>
 
+                <field id="payment_method_image" translate="label" type="select" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Show Buy Now with LayBuy on Payment Method</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <depends>
+                        <field id="active">1</field>
+                    </depends>
+                </field>
+
             </group>
         </section>
     </system>

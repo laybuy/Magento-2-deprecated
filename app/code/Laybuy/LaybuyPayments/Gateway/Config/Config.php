@@ -18,7 +18,7 @@ class Config extends \Magento\Payment\Gateway\Config\Config
     const KEY_SANDBOX_MERCHANT_ID = 'sandbox_merchant_id';
     const KEY_SANDBOX_API_KEY = 'sandbox_api_key';
     const KEY_SDK_URL = 'sdk_url';
-
+    const PAYMENT_METHOD_IMAGE = 'payment_method_image';
     
     
     /**
@@ -110,5 +110,14 @@ class Config extends \Magento\Payment\Gateway\Config\Config
     public function getSandboxApiKey() {
         $value = $this->getValue(self::KEY_SANDBOX_API_KEY);
         return $value ? $this->encryptor->decrypt($value) : $value;
+    }
+
+    /**
+     * Get use payment method image flag
+     *
+     * @return string
+     */
+    public function getPaymentMethodImage() {
+        return $this->getValue(self::PAYMENT_METHOD_IMAGE);
     }
 }
