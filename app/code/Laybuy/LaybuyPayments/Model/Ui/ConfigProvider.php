@@ -39,7 +39,8 @@ final class ConfigProvider implements ConfigProviderInterface
                     'api_key' => $this->config->getApiKey(),
                     'sandbox_merchant_id' => $this->config->getSandboxMerchantId(),
                     'sandbox_api_key'     => $this->config->getSandboxApiKey(),
-                    'use_sandbox' => $this->config->getUseSandbox()
+                    'use_sandbox' => $this->config->getUseSandbox(),
+                    'payment_method_image' => $this->config->getPaymentMethodImage(),
                 ],
             ]
         ];
