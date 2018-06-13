@@ -4,7 +4,9 @@ namespace Laybuy\LaybuyPayments\Block\Catalog\Product;
 
 class EasyPayments extends \Magento\Framework\View\Element\Template
 {
-    /** @var PriceCurrencyInterface $priceCurrency */
+    /** 
+     * @var \Magento\Framework\Pricing\PriceCurrencyInterface
+     */
     protected $_priceCurrency;
 
     /**
