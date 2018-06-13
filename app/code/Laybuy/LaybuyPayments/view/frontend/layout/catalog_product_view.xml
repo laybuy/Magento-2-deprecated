@@ -1,0 +1,14 @@
+<!--
+/**
+  * 
+  * 
+  * @package Laybuy_Payments */ -->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+    </head>
+    <body>
+      <referenceContainer name="product.info.main">
+        <block name="laybuy_laybuypayments.easypayments" class="Laybuy\LaybuyPayments\Block\Catalog\Product\EasyPayments" after="product.price.final" template="product/easypayments.phtml" ifconfig="payment/laybuy_laybuypayments/show_easy_payments" />
+      </referenceContainer>
+    </body>
+</page>
