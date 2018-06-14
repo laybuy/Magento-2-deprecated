@@ -35,18 +35,6 @@ define(
 
         afterPlaceOrder: function () {
           var self = this;
-          console.log('afterPlaceOrder config');
-          console.log(quote);
-
-         /* $.get(config.getDataUrl())
-              .done(function (response) {
-                customerData.invalidate(['cart']);
-                formBuilder(response).submit();
-              }).fail(function (response) {
-            errorProcessor.process(response, self.messageContainer);
-          }).always(function () {
-            fullScreenLoader.stopLoader();
-          });*/
 
         },
         /**
@@ -55,15 +43,9 @@ define(
         placeOrder: function (data, event) {
           var self = this;
 
-          console.log('placeOrder Called');
-
           if (event) {
             event.preventDefault();
           }
-          console.log('console.log(window.checkoutConfig):');
-          console.log(window.checkoutConfig);
-          console.log('data:');
-          console.log(data);
 
           if (this.validate()) {
             this.isPlaceOrderActionAllowed(false);
@@ -81,11 +63,7 @@ define(
                   self.afterPlaceOrder();
 
                   if (self.redirectAfterPlaceOrder) {
-
-
                     window.location.assign( JSON.parse( json ) );
-
-                    //redirectOnSuccessAction.execute();
                   }
                 }
             );

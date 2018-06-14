@@ -25,7 +25,7 @@ define([
         // data is retrieved from data provider by value of the customScope property
         var formData = this.source.get('customCheckoutForm');
         // do something with form data
-        console.dir(formData);
+        
       }
     }
   });
