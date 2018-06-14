@@ -103,11 +103,11 @@ class Laybuy implements ClientInterface
         OrderFactory $orderFactory,
         Logger $logger
     ) {
-        $this->logger = $logger;
+        $this->logger          = $logger;
         $this->checkoutSession = $checkoutSession;
-        $this->quoteFactory = $quoteFactory;
-        $this->orderFactory = $orderFactory;
-        $this->config = $config;
+        $this->quoteFactory    = $quoteFactory;
+        $this->orderFactory    = $orderFactory;
+        $this->config          = $config;
     
         $this->logger->debug([__METHOD__ . ' TEST sandbox? ' => $this->config->getUseSandbox()]);
         $this->logger->debug([__METHOD__ . ' TEST sandbox_merchantid? ' => $this->config->getSandboxMerchantId()]);

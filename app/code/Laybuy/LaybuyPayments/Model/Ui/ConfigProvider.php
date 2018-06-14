@@ -34,12 +34,7 @@ final class ConfigProvider implements ConfigProviderInterface
         return [
             'payment' => [
                 self::CODE => [
-                    'isActive' => $this->config->isActive(),
-                    'merchant_id' => $this->config->getMerchantId(),
-                    'api_key' => $this->config->getApiKey(),
-                    'sandbox_merchant_id' => $this->config->getSandboxMerchantId(),
-                    'sandbox_api_key'     => $this->config->getSandboxApiKey(),
-                    'use_sandbox' => $this->config->getUseSandbox()
+                    'payment_method_image' => $this->config->getPaymentMethodImage()
                 ],
             ]
         ];
