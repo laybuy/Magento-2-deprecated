@@ -5,7 +5,8 @@
  */
 namespace Laybuy\LaybuyPayments\Gateway\Request;
 
-use Magento\Payment\Gateway\ConfigInterface;
+//use Magento\Payment\Gateway\ConfigInterface;
+use Laybuy\LaybuyPayments\Gateway\Config\Config;
 use Magento\Payment\Gateway\Data\PaymentDataObjectInterface;
 use Magento\Payment\Gateway\Request\BuilderInterface;
 use Magento\Sales\Api\Data\OrderPaymentInterface;
@@ -30,7 +31,7 @@ class CaptureRequest implements BuilderInterface
      */
     public function __construct(
         StoreManagerInterface $storeManager,
-        ConfigInterface $config
+        Config $config
     ) {
         $this->config = $config;
         $this->storeManage = $storeManager;
@@ -55,7 +56,7 @@ class CaptureRequest implements BuilderInterface
 
         $order = $paymentDO->getOrder();
         //$store = $this->storeManager->getStore();
-        $payment = $paymentDO->getPayment();
+       // $payment = $paymentDO->getPayment();
     
         /* @var $urlInterface \Magento\Framework\UrlInterface */
         $urlInterface = \Magento\Framework\App\ObjectManager::getInstance()->get('Magento\Framework\UrlInterface');
@@ -67,7 +68,13 @@ class CaptureRequest implements BuilderInterface
         $laybuy = new \stdClass();
     
         $laybuy->amount    = number_format($order->getGrandTotalAmount(), 2, '.', ''); // laybuy likes the .00 to be included
-        $laybuy->currency  = "NZD"; // New Zealand Dollars (NZD) is currently the only currency supported.
+        $laybuy->currency = $this->config->getCurrency(); //"NZD"; // support for new currency options from laybuy
+    
+        // check if this has been set, if not use NZD as this was the hardcoded value before
+        if ($laybuy->currency === NULL) {
+            $laybuy->currency = "NZD";
+        }
+        
         $laybuy->returnUrl = $base_url . '/laybuypayments/payment/process'; //, ['_secure' => TRUE]);
     
         // BS $order->merchantReference = $quote->getId();

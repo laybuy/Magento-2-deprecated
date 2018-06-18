@@ -296,4 +296,30 @@ class Laybuy implements ClientInterface
     }
     
     
+    /**
+     *
+     * @return array
+     */
+    public function getCurrencyList() {
+        
+        $client   = $this->getRestClient();
+        $response = $client->restGet('/options/currencies');
+        
+        $result = json_decode($response->getBody());
+        
+        $this->logger->debug([__METHOD__ . ' RESULT' => $result]);
+        
+        $currencies = [];
+        
+        if (strtoupper($result->result) === "SUCCESS" && isset($result->currencies) && is_array($result->currencies)) {
+            
+            foreach ($result->currencies as $currency) {
+                $currencies[strtoupper($currency)] = strtoupper($currency);
+            }
+            
+            return $currencies;
+        }
+        
+        return [];
+    }
 }

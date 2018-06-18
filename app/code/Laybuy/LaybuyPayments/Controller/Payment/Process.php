@@ -24,6 +24,9 @@ use Laybuy\LaybuyPayments\Gateway\Config\Config;
 use Laybuy\LaybuyPayments\Model\Helper;
 use Laybuy\LaybuyPayments\Gateway\Http\Client\Laybuy;
 
+use Magento\Framework\Event\ObserverInterface;
+use Magento\Sales\Model\OrderFactory;
+
 class Process extends Action {
     
     const LAYBUY_LIVE_URL = 'https://api.laybuy.com';
@@ -62,7 +65,7 @@ class Process extends Action {
      */
     private $config;
     
-
+    
     /**
      * @var Session
      */
@@ -81,34 +84,50 @@ class Process extends Action {
     private $logger;
     
     /**
+     * @var EventManager
+     */
+    private $eventManager;
+    
+    /**
+     * @var EventManager
+     */
+    private $orderFactory;
+    
+    /**
      * Constructor
      *
      * @param Context $context
      * @param Config $config
      * @param Session $checkoutSession
      * @param Helper\OrderPlace $orderPlace
+     * @param \Magento\Framework\Event\Manager $eventManager
      * @param LoggerInterface|null $logger
+     * @param OrderFactory $order_factory
      */
     public function __construct(
         Context $context,
         Config $config,
         Session $checkoutSession,
         Helper\OrderPlace $orderPlace,
+        \Magento\Framework\Event\Manager $eventManager,
+        OrderFactory $order_factory,
         Logger $logger
     ) {
         parent::__construct($context);
         $this->checkoutSession = $checkoutSession;
-        $this->orderPlace = $orderPlace;
-        $this->logger     = $logger;
+        $this->orderPlace      = $orderPlace;
+        $this->logger          = $logger;
+        $this->eventManager    = $eventManager;
+        $this->orderFactory    = $order_factory;
     }
     
     public function execute() {
-    
-        $this->logger->debug([__METHOD__ => 'start']);
-    
-        $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT );
         
-        $quote          = $this->checkoutSession->getQuote();
+        $this->logger->debug([__METHOD__ => 'start']);
+        
+        $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
+        
+        $quote = $this->checkoutSession->getQuote();
         
         /*
          *  $requestData = json_decode(
@@ -121,11 +140,21 @@ class Process extends Action {
             //status=CANCELLED | SUCCESS
             $status = $this->getRequest()->getParam('status');
             
-            if($status == Laybuy::SUCCESS){
+            if ($status == Laybuy::SUCCESS) {
                 
                 $this->validateQuote($quote);
-    
+                $order_id = $quote->getOrigOrderId();
+                $order    = \Magento\Framework\App\ObjectManager::getInstance()->create('\Magento\Sales\Model\Order')->load($order_id);
+                
                 $this->orderPlace->execute($quote);
+                
+                // $this->eventManager->dispatch('sales_model_service_quote_submit_failure');
+                // revert the extra stock decrease
+                $this->eventManager->dispatch('sales_model_service_quote_submit_failure', [
+                    'order' => $order,
+                    'quote' => $quote,
+                    // 'exception' => $e
+                ]);
                 
                 /** @var \Magento\Framework\Controller\Result\Redirect $resultRedirect */
                 return $resultRedirect->setPath('checkout/onepage/success', ['_secure' => TRUE]);
@@ -138,6 +167,7 @@ class Process extends Action {
         }
         
         $this->messageManager->addNoticeMessage('Laybuy payment was Cancelled');
+        // re add stock??
         
         return $resultRedirect->setPath('checkout/cart', ['_secure' => TRUE]);
         
