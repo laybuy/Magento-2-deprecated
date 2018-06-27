@@ -24,4 +24,10 @@
         </arguments>
     </type>
 
+    <type name="Laybuy\LaybuyPayments\Controller\Payment\Redirect">
+        <arguments>
+            <argument name="session" xsi:type="object">Magento\Customer\Model\Session</argument>
+            <argument name="logger" xsi:type="object">LaybuyPaymentsGatewayLogger</argument>
+        </arguments>
+    </type>
 </config>

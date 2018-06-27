@@ -10,22 +10,20 @@ namespace Laybuy\LaybuyPayments\Controller\Payment;
 
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\Action\Action;
-use Magento\Framework\App\ObjectManager;
-use Magento\Checkout\Model\Session;
-use Magento\Framework\Controller\ResultFactory;
+use Magento\Customer\Model\Session as CustomerSession;
+use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Quote\Api\Data\CartInterface;
-
-use Magento\Framework\Controller\ResultInterface;
-use Magento\Framework\Session\SessionManagerInterface;
-use Magento\Framework\Webapi\Exception;
 use Magento\Payment\Model\Method\Logger;
+use Magento\Payment\Helper\Data as PaymentHelper;
+use Magento\Quote\Api\CartManagementInterface;
+use Magento\Checkout\Model\Type\Onepage;
+use Magento\Sales\Model\OrderFactory;
+use Magento\Sales\Model\Service\OrderService;
 
 use Laybuy\LaybuyPayments\Gateway\Config\Config;
 use Laybuy\LaybuyPayments\Model\Helper;
 use Laybuy\LaybuyPayments\Gateway\Http\Client\Laybuy;
 
-use Magento\Framework\Event\ObserverInterface;
-use Magento\Sales\Model\OrderFactory;
 
 class Process extends Action {
     
@@ -65,9 +63,13 @@ class Process extends Action {
      */
     private $config;
     
+    /**
+     * @var CustomerSession
+     */
+    protected $customerSession;
     
     /**
-     * @var Session
+     * @var CheckoutSession
      */
     protected $checkoutSession;
     
@@ -93,157 +95,130 @@ class Process extends Action {
      */
     private $orderFactory;
     
-    /**
-     * Constructor
-     *
-     * @param Context $context
-     * @param Config $config
-     * @param Session $checkoutSession
-     * @param Helper\OrderPlace $orderPlace
-     * @param \Magento\Framework\Event\Manager $eventManager
-     * @param LoggerInterface|null $logger
-     * @param OrderFactory $order_factory
-     */
+    
+    private  $orderManagement;
+    
+    protected $quoteRepository;
+    
+    protected $paymentHelper;
+    
+    protected $cartManagement;
+    
+    protected $checkout;
+    
+    protected $client;
+    
+    
     public function __construct(
         Context $context,
         Config $config,
-        Session $checkoutSession,
+        CustomerSession $customerSession,
+        CheckoutSession $checkoutSession,
         Helper\OrderPlace $orderPlace,
         \Magento\Framework\Event\Manager $eventManager,
         OrderFactory $order_factory,
-        Logger $logger
+        Logger $logger,
+        \Magento\Quote\Api\CartRepositoryInterface $quoteRepository,
+        OrderService $orderManagement,
+        PaymentHelper $paymentHelper,
+        CartManagementInterface $cartManagement,
+        Onepage $checkout,
+        Laybuy $client
     ) {
         parent::__construct($context);
+        $this->config          = $config;
+        $this->customerSession = $customerSession;
         $this->checkoutSession = $checkoutSession;
         $this->orderPlace      = $orderPlace;
         $this->logger          = $logger;
         $this->eventManager    = $eventManager;
         $this->orderFactory    = $order_factory;
+        $this->quoteRepository = $quoteRepository;
+        $this->paymentHelper   = $paymentHelper;
+        $this->cartManagement  = $cartManagement;
+        $this->checkout        = $checkout;
+        $this->client          = $client;
     }
     
     public function execute() {
         
         $this->logger->debug([__METHOD__ => 'start']);
-        
-        $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
-        
+    
+        //status=CANCELLED | SUCCESS
+        $status = strtoupper($this->getRequest()->getParam('status') );
+        $token  = $this->getRequest()->getParam('token');
+    
+        /* @var $quote \Magento\Quote\Model\Quote */
+        // try checkout session  -- look into fall backs?
         $quote = $this->checkoutSession->getQuote();
+    
+    
+         try {
+            if($status == Laybuy::SUCCESS ){
+                if ($this->client->getCheckoutMethod($quote) === Onepage::METHOD_GUEST) {
+                
+                }
         
-        /*
-         *  $requestData = json_decode(
-            $this->getRequest()->getPostValue('result', '{}'),
-            true
-        );
-         */
-        try {
-            
-            //status=CANCELLED | SUCCESS
-            $status = $this->getRequest()->getParam('status');
-            
-            if ($status == Laybuy::SUCCESS) {
+                // setup order with the onepage helper
+                $this->checkout->setQuote($quote);
                 
-                $this->validateQuote($quote);
-                $order_id = $quote->getOrigOrderId();
-                $order    = \Magento\Framework\App\ObjectManager::getInstance()->create('\Magento\Sales\Model\Order')->load($order_id);
+                $paymentData = [
+                    "method" => "laybuy_laybuypayments",
+                ];
+        
+                $this->checkout->savePayment($paymentData);
+                $this->checkout->saveOrder();
                 
-                $this->orderPlace->execute($quote);
+                $laybuy_order_id = $this->client->laybuyConfirm($token);
                 
-                // $this->eventManager->dispatch('sales_model_service_quote_submit_failure');
-                // revert the extra stock decrease
-                $this->eventManager->dispatch('sales_model_service_quote_submit_failure', [
-                    'order' => $order,
-                    'quote' => $quote,
-                    // 'exception' => $e
-                ]);
+                if(!$laybuy_order_id){
+                    $this->messageManager->addNoticeMessage('Laybuy order confirmation error.');
+                }
+    
+                /* @var $order \Magento\Sales\Model\Order */
+                //$order  = $this->checkoutSession->getLastRealOrder();
+                $txn_id = $laybuy_order_id . '_' . $token;
                 
-                /** @var \Magento\Framework\Controller\Result\Redirect $resultRedirect */
-                return $resultRedirect->setPath('checkout/onepage/success', ['_secure' => TRUE]);
+                //TODO look into assigning a Txn ID on the order
+                //$order->getPayment()->setLastTransId($txn_id);
+                //$order->setCustomerNote('Paid with Laybuy: ' . $txn_id);
+                //$order->save();
+                
+                $this->logger->debug(['txn_id' => $txn_id]);
+                
+                // TODO: look into why this causes the success page to bounce back to the cart
+                //$this->checkoutSession->clearQuote();
+                
+                return $this->_redirect('checkout/onepage/success', ['_secure' => TRUE]);
                 
             }
+            else {
+                
+                // the Neat this is that we done need to do anything
+                // there isn't an order yet
+                
+                if($status == Laybuy::CANCELLED ){
+                    $this->messageManager->addNoticeMessage('Laybuy payment was Cancelled.');
+                }
+                else {
+                    $this->messageManager->addNoticeMessage('Laybuy: There was an error, your payment failed.');
+                }
+                
+                $this->client->laybuyCancel($token);
+    
+                // fall though to cart redirect
+            }
+            
+            
             
         } catch (\Exception $e) {
-            //$this->logger->debug(['error' => $e]);??
+            $this->logger->debug(['process error ' => $e->getTraceAsString()]);
             $this->messageManager->addExceptionMessage($e, $e->getMessage());
+            
         }
-        
-        $this->messageManager->addNoticeMessage('Laybuy payment was Cancelled');
-        // re add stock??
-        
-        return $resultRedirect->setPath('checkout/cart', ['_secure' => TRUE]);
-        
-        
-    }
     
-    /**
-     * @param CartInterface $quote
-     *
-     * @return void
-     * @throws \InvalidArgumentException
-     */
-    protected function validateQuote($quote) {
-        if (!$quote || !$quote->getItemsCount()) {
-            throw new \InvalidArgumentException(__('We can\'t initialize checkout.'));
-        }
-    }
-    
-    /**
-     * Returns response fields for result code
-     *
-     * @param int $resultCode
-     *
-     * @return \Zend_Rest_Client
-     */
-    private function getRestClient() {
+        return $this->_redirect('checkout/cart', ['_secure' => TRUE]);
         
-        if (is_null($this->laybuy_merchantid)) { // ?? just do it anyway?
-            $this->setupLaybuy();
-        }
-        
-        try {
-            
-            $this->restClient = new \Zend_Rest_Client($this->endpoint);
-            $this->restClient->getHttpClient()->setAuth($this->laybuy_merchantid, $this->laybuy_apikey, \Zend_Http_Client::AUTH_BASIC);
-            
-            //$this->restClient->getHttpClient()->setAuth('100000' , 'Kaz1xe5WwpOvl3pJL4FqqX1vrnJGrcxghJRKQqZddKBLg23DxsQA2qRhK6QJcVus', \Zend_Http_Client::AUTH_BASIC);
-            // 'auth' => ['100000', 'Kaz1xe5WwpOvl3pJL4FqqX1vrnJGrcxghJRKQqZddKBLg23DxsQA2qRhK6QJcVus'],
-            
-        } catch (\Exception $e) {
-            
-            // Mage::logException($e);
-            // Mage::helper('checkout')->sendPaymentFailedEmail($this->getOnepage()->getQuote(), $e->getMessage());
-            
-            $this->logger->debug([__METHOD__ . ' CLIENT FAILED: ' => $this->laybuy_merchantid . ":" . $this->laybuy_apikey]);
-            
-            $result['success']        = FALSE;
-            $result['error']          = TRUE;
-            $result['error_messages'] = $this->__('[Laybuy connect] There was an error processing your order. Please contact us or try again later.');
-            // TODOD this error needs to go back to the user
-        }
-        
-        return $this->restClient;
-        
-    }
-    
-    
-    private function setupLaybuy() {
-        $this->logger->debug([__METHOD__ . ' sandbox? ' => $this->config->getUseSandbox()]);
-        $this->logger->debug([__METHOD__ . ' sandbox_merchantid? ' => $this->config->getSandboxMerchantId()]);
-        
-        $this->laybuy_sandbox = $this->config->getUseSandbox() == 1;
-        
-        if ($this->laybuy_sandbox) {
-            $this->endpoint          = self::LAYBUY_SANDBOX_URL;
-            $this->laybuy_merchantid = $this->config->getSandboxMerchantId();
-            $this->laybuy_apikey     = $this->config->getSandboxApiKey();
-        }
-        else {
-            $this->endpoint          = self::LAYBUY_LIVE_URL;
-            $this->laybuy_merchantid = $this->config->getMerchantId();
-            $this->laybuy_apikey     = $this->config->getApiKey();
-        }
-        
-        $this->logger->debug([__METHOD__ . ' CLIENT INIT: ' => $this->laybuy_merchantid . ":" . $this->laybuy_apikey]);
-        $this->logger->debug([__METHOD__ . ' INITIALISED' => '']);
     }
     
 }

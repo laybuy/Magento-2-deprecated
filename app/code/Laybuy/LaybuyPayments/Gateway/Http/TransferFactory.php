@@ -7,9 +7,7 @@ namespace Laybuy\LaybuyPayments\Gateway\Http;
 
 use Magento\Payment\Gateway\Http\TransferBuilder;
 use Magento\Payment\Gateway\Http\TransferFactoryInterface;
-use Magento\Payment\Gateway\Http\TransferInterface;
-
-
+use Magento\Payment\Model\Method\Logger;
 
 class TransferFactory implements TransferFactoryInterface
 {
@@ -17,32 +15,26 @@ class TransferFactory implements TransferFactoryInterface
      * @var TransferBuilder
      */
     private $transferBuilder;
+    
+    private $logger;
 
     /**
      * @param TransferBuilder $transferBuilder
      */
     public function __construct(
-        TransferBuilder $transferBuilder
+        TransferBuilder $transferBuilder,
+        Logger $logger
     ) {
         $this->transferBuilder = $transferBuilder;
+        $this->logger = $logger;
     }
-
+    
     /**
-     * Builds gateway transfer object
-     *
      * @param array $request
-     * @return TransferInterface
+     *
+     * @return \Magento\Payment\Gateway\Http\TransferInterface|void
      */
     public function create(array $request) {
-    
-        // $authHeader = 'Authorization: Basic ' . base64_encode($merchantId . ':' . $apiKey);
-        
-        // not used, to review
-        return $this->transferBuilder
-            ->setBody($request)
-            ->setMethod('POST')
-            ->setUri('https://sandbox-api.laybuy.com/order/create') // ->setUri($this->getUrl())
-            ->setHeaders(['Content-Type' => 'application/json'] )
-            ->build();
+        //
     }
 }

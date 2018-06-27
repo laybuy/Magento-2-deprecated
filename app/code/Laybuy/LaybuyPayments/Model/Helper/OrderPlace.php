@@ -14,6 +14,12 @@ use Magento\Quote\Api\CartManagementInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Checkout\Api\AgreementsValidatorInterface;
 use Magento\Sales\Model\OrderFactory;
+use Magento\Quote\Model\QuoteFactory;
+use Magento\Quote\Model\Quote\PaymentFactory;
+use Magento\Payment\Model\Method\Logger;
+use Magento\Checkout\Model\Session as CheckoutSession;
+
+
 /**
  * Class OrderPlace
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -46,6 +52,27 @@ class OrderPlace extends AbstractHelper
     protected $orderFactory;
     
     /**
+     * @var QuoteFactory
+     */
+    protected $quoteFactory;
+    /**
+     * @var PaymentFactory
+     */
+    protected $paymentFactory;
+    
+    /**
+     * @var Logger
+     */
+    protected $logger;
+    
+    /**
+     * @var CheckoutSession
+     */
+    protected $checkoutsession;
+    
+    
+    
+    /**
      * Constructor
      *
      * @param CartManagementInterface $cartManagement
@@ -53,20 +80,29 @@ class OrderPlace extends AbstractHelper
      * @param Session $customerSession
      * @param OrderFactory $orderFactory
      * @param Data $checkoutHelper
+     * @param PaymentFactory $paymentFactory
+     * @param Logger $logger
      */
     public function __construct(
         CartManagementInterface $cartManagement,
         AgreementsValidatorInterface $agreementsValidator,
         Session $customerSession,
         OrderFactory $orderFactory,
-        Data $checkoutHelper
+        Data $checkoutHelper,
+        PaymentFactory $paymentFactory,
+        Logger $logger,
+        CheckoutSession $checkoutsession,
+        QuoteFactory $quoteFactory
     ) {
         $this->cartManagement = $cartManagement;
         $this->agreementsValidator = $agreementsValidator;
         $this->customerSession = $customerSession;
         $this->orderFactory = $orderFactory;
         $this->checkoutHelper = $checkoutHelper;
-        
+        $this->paymentFactory = $paymentFactory;
+        $this->logger = $logger;
+        $this->checkoutsession = $checkoutsession;
+        $this->quoteFactory = $quoteFactory;
     }
 
     /**
@@ -78,16 +114,10 @@ class OrderPlace extends AbstractHelper
      * @throws LocalizedException
      */
     public function execute(Quote $quote) {
-      
-        if ($this->getCheckoutMethod($quote) === Onepage::METHOD_GUEST) {
-            $this->prepareGuestQuote($quote);
-        }
-
-        $this->disabledQuoteAddressValidation($quote);
-
-        $quote->collectTotals();
         
-        $this->cartManagement->placeOrder($quote->getId());
+        $this->logger->debug([__METHOD__ . ' start ' => 'start']);
+        //
+        
     }
 
     /**

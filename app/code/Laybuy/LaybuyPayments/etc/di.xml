@@ -10,25 +10,27 @@
     <!-- Payment Method Facade configuration -->
     <virtualType name="LaybuyPaymentsFacade" type="Magento\Payment\Model\Method\Adapter">
         <arguments>
-            <argument name="code" xsi:type="const">\Laybuy\LaybuyPayments\Model\Ui\ConfigProvider::CODE</argument>
+            <argument name="code" xsi:type="const">Laybuy\LaybuyPayments\Model\Ui\ConfigProvider::CODE</argument>
             <argument name="formBlockType" xsi:type="string">Magento\Payment\Block\Form</argument>
             <argument name="infoBlockType" xsi:type="string">Laybuy\LaybuyPayments\Block\Info</argument>
             <argument name="valueHandlerPool" xsi:type="object">LaybuyPaymentsValueHandlerPool</argument>
+            <!-- we use a custom redirect so that the order is not created and invoiced before we jump to Laybuy
             <argument name="commandPool" xsi:type="object">LaybuyPaymentsCommandPool</argument>
+            -->
         </arguments>
     </virtualType>
 
     <!-- Configuration reader -->
     <virtualType name="LaybuyPaymentsGatewayConfig" type="Laybuy\LaybuyPayments\Gateway\Config\Config">
         <arguments>
-            <argument name="methodCode" xsi:type="const">\Laybuy\LaybuyPayments\Model\Ui\ConfigProvider::CODE</argument>
+            <argument name="methodCode" xsi:type="const">Laybuy\LaybuyPayments\Model\Ui\ConfigProvider::CODE</argument>
         </arguments>
     </virtualType>
 
     <!-- Configuration reader -->
     <type name="Laybuy\LaybuyPayments\Gateway\Config\Config">
         <arguments>
-            <argument name="methodCode" xsi:type="const">\Laybuy\LaybuyPayments\Model\Ui\ConfigProvider::CODE</argument>
+            <argument name="methodCode" xsi:type="const">Laybuy\LaybuyPayments\Model\Ui\ConfigProvider::CODE</argument>
         </arguments>
     </type>
 
@@ -46,29 +48,28 @@
         </arguments>
     </type>
 
-    <!-- Commands infrastructure -->
+    <!-- Commands infrastructure
     <virtualType name="LaybuyPaymentsCommandPool" type="Magento\Payment\Gateway\Command\CommandPool">
         <arguments>
             <argument name="commands" xsi:type="array">
-                <item name="authorize" xsi:type="string">LaybuyPaymentsAuthorizeCommand</item>
                 <item name="capture" xsi:type="string">LaybuyPaymentsCaptureCommand</item>
-                <!--<item name="void" xsi:type="string">SamplePaymentGatewayVoidCommand</item>-->
             </argument>
         </arguments>
     </virtualType>
+    -->
 
     <!-- Authorize command -->
-    <virtualType name="LaybuyPaymentsAuthorizeCommand" type="Magento\Payment\Gateway\Command\GatewayCommand">
+    <!--<virtualType name="LaybuyPaymentsAuthorizeCommand" type="Magento\Payment\Gateway\Command\GatewayCommand">
         <arguments>
             <argument name="requestBuilder" xsi:type="object">LaybuyPaymentsAuthorizationRequest</argument>
             <argument name="handler" xsi:type="object">LaybuyPaymentsResponseHandlerComposite</argument>
             <argument name="transferFactory" xsi:type="object">Laybuy\LaybuyPayments\Gateway\Http\TransferFactory</argument>
             <argument name="client" xsi:type="object">Laybuy\LaybuyPayments\Gateway\Http\Client\Laybuy</argument>
         </arguments>
-    </virtualType>
+    </virtualType>-->
 
     <!-- Authorization Request -->
-    <virtualType name="LaybuyPaymentsAuthorizationRequest" type="Magento\Payment\Gateway\Request\BuilderComposite">
+    <!--<virtualType name="LaybuyPaymentsAuthorizationRequest" type="Magento\Payment\Gateway\Request\BuilderComposite">
         <arguments>
             <argument name="builders" xsi:type="array">
                 <item name="transaction" xsi:type="string">Laybuy\LaybuyPayments\Gateway\Request\AuthorizationRequest</item>
@@ -79,18 +80,19 @@
         <arguments>
             <argument name="config" xsi:type="object">LaybuyPaymentsGatewayConfig</argument>
         </arguments>
-    </type>
+    </type>-->
 
-    <!-- Capture command -->
+    <!-- Capture command
     <virtualType name="LaybuyPaymentsCaptureCommand" type="Magento\Payment\Gateway\Command\GatewayCommand">
         <arguments>
             <argument name="requestBuilder" xsi:type="object">Laybuy\LaybuyPayments\Gateway\Request\CaptureRequest</argument>
-            <argument name="handler" xsi:type="object">Laybuy\LaybuyPayments\Gateway\Response\TxnIdHandler</argument>
             <argument name="transferFactory" xsi:type="object">Laybuy\LaybuyPayments\Gateway\Http\TransferFactory</argument>
-            <argument name="validator" xsi:type="object">Laybuy\LaybuyPayments\Gateway\Validator\ResponseCodeValidator</argument>
             <argument name="client" xsi:type="object">Laybuy\LaybuyPayments\Gateway\Http\Client\Laybuy</argument>
+            <argument name="handler" xsi:type="object">Laybuy\LaybuyPayments\Gateway\Response\TxnIdHandler</argument>
+            <argument name="validator" xsi:type="object">Laybuy\LaybuyPayments\Gateway\Validator\ResponseCodeValidator</argument>
         </arguments>
     </virtualType>
+    -->
 
     <!-- Capture Request -->
     <type name="Laybuy\LaybuyPayments\Gateway\Request\CaptureRequest">

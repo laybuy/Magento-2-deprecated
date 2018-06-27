@@ -11,6 +11,9 @@ use Magento\Payment\Gateway\Data\PaymentDataObjectInterface;
 use Magento\Payment\Gateway\Request\BuilderInterface;
 use Magento\Sales\Api\Data\OrderPaymentInterface;
 use Magento\Store\Model\StoreManagerInterface;
+use Magento\Payment\Model\Method\Logger;
+use Magento\Customer\Model\Session;
+use Magento\Sales\Model\OrderFactory;
 
 class CaptureRequest implements BuilderInterface
 {
@@ -24,17 +27,40 @@ class CaptureRequest implements BuilderInterface
      */
     protected $storeManager;
     
+    /**
+     * @var StoreManagerInterface
+     */
+    protected $logger;
+    
+    /**
+     * @var Session
+     */
+    protected $customerSession;
+    
+    /**
+     * @var OrderFactory
+     */
+    protected $orderFactory;
     
     /**
      * @param StoreManagerInterface $storeManager
-     * @param ConfigInterface $config
+     * @param Config $config
+     * @param Logger $logger
+     * @param Session $customerSession
+     * @param OrderFactory $orderFactory
      */
     public function __construct(
         StoreManagerInterface $storeManager,
-        Config $config
+        Config $config,
+        Logger $logger,
+        Session $customerSession,
+        OrderFactory $orderFactory
     ) {
         $this->config = $config;
         $this->storeManage = $storeManager;
+        $this->logger = $logger;
+        $this->customerSession = $customerSession;
+        $this->orderFactory = $orderFactory;
     }
 
     /**
@@ -53,11 +79,17 @@ class CaptureRequest implements BuilderInterface
 
         /** @var PaymentDataObjectInterface $paymentDO */
         $paymentDO = $buildSubject['payment'];
-
-        $order = $paymentDO->getOrder();
-        //$store = $this->storeManager->getStore();
-       // $payment = $paymentDO->getPayment();
     
+        /* @var $order   \Magento\Payment\Gateway\Data\Order\OrderAdapter */
+        $order = $paymentDO->getOrder();
+
+        
+        $this->logger->debug([__METHOD__ . ' ORDER ID ' => $order->getId()]);
+        $order_id = $order->getOrderIncrementId();
+        //$this->session->setLaybuyOrder($order);
+        $this->customerSession->setLaybuyOrderID( (int) $order_id); //just fro guest??
+        
+
         /* @var $urlInterface \Magento\Framework\UrlInterface */
         $urlInterface = \Magento\Framework\App\ObjectManager::getInstance()->get('Magento\Framework\UrlInterface');
         $base_url     = $urlInterface->getBaseUrl();
@@ -75,10 +107,10 @@ class CaptureRequest implements BuilderInterface
             $laybuy->currency = "NZD";
         }
         
-        $laybuy->returnUrl = $base_url . '/laybuypayments/payment/process'; //, ['_secure' => TRUE]);
+        $laybuy->returnUrl = $base_url . 'laybuypayments/payment/process'; //, ['_secure' => TRUE]);
     
         // BS $order->merchantReference = $quote->getId();
-        $laybuy->merchantReference = $order->getOrderIncrementId();
+        $laybuy->merchantReference = $order_id;
     
         $laybuy->customer            = new \stdClass();
         $laybuy->customer->firstName = $address->getFirstname();
@@ -88,7 +120,6 @@ class CaptureRequest implements BuilderInterface
         $phone = $address->getTelephone();
     
         if ($phone == '' || strlen(preg_replace('/[^0-9+]/i', '', $phone)) <= 6) {
-            // TODO: $this->errors[] = 'Please provide a valid New Zealand phone number.';
             $phone = "00 000 000";
         }
     
@@ -96,8 +127,7 @@ class CaptureRequest implements BuilderInterface
     
     
         $laybuy->items = [];
-    
-        $totalOrderValue = 0;
+
     
         // make the order more like a normal gateway txn, we just make
         // an item that match the total order rather than try to get the orderitem to match the grandtotal
@@ -106,7 +136,7 @@ class CaptureRequest implements BuilderInterface
     
         $laybuy->items[0]              = new \stdClass();
         $laybuy->items[0]->id          = 1;
-        $laybuy->items[0]->description = "Purchase from " ;//. //$store->getName();
+        $laybuy->items[0]->description = "Purchase" ;//. //$store->getName();
         $laybuy->items[0]->quantity    = 1;
         $laybuy->items[0]->price       = number_format($order->getGrandTotalAmount(), 2, '.', ''); // laybuy likes the .00 to be included
     

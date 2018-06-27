@@ -14,10 +14,6 @@ Our module is available under the BSD-2-Clause. See the [LICENSE](https://github
 
 Installation
 ------------
-
-### Install by Composer:
-
-To come.
     
 ### Install by uploading files:
 
