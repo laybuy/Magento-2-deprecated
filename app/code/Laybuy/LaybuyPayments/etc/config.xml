@@ -27,6 +27,7 @@
                 <sdk_url><![CDATA[https://sandbox-docs.laybuy.com]]></sdk_url>
                 <paymentInfoKeys>result,token,orderId,amount,currency,merchantReference,processed</paymentInfoKeys>
                 <privateInfoKeys>token,processed</privateInfoKeys>
+                <payment_currency>NZD</payment_currency>
             </laybuy_laybuypayments>
         </payment>
     </default>
