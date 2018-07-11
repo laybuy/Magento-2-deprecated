@@ -20,7 +20,7 @@
         "magento/module-vault": "101.0.*",
         "magento/module-quote": "101.0.*",
         "magento/module-ui": "101.0.*",
-        "magento/module-braintree": "101.0.*"
+        "magento/module-braintree": "100.2.*"
     },
     "require-dev": {
         "phpunit/phpunit": "~6.2.0",
