@@ -9,7 +9,6 @@ use Magento\Quote\Model\Quote;
 use Magento\Quote\Model\Quote\Address;
 use Magento\Quote\Model\Quote\Payment;
 use Magento\Quote\Api\CartRepositoryInterface;
-use Magento\Braintree\Model\Ui\PayPal\ConfigProvider;
 use Magento\Framework\Exception\LocalizedException;
 use Laybuy\LaybuyPayments\Observer\DataAssignObserver;
 use Laybuy\LaybuyPayments\Gateway\Config\Config;
@@ -61,8 +60,8 @@ class QuoteUpdater extends AbstractHelper
 
         $payment = $quote->getPayment();
 
-        $payment->setMethod(ConfigProvider::PAYPAL_CODE);
-        $payment->setAdditionalInformation(DataAssignObserver::PAYMENT_METHOD_NONCE, $nonce);
+        $payment->setMethod(Config::CODE);
+        //$payment->setAdditionalInformation(DataAssignObserver::PAYMENT_METHOD_NONCE, $nonce);
 
         $this->updateQuote($quote, $details);
     }
@@ -130,7 +129,6 @@ class QuoteUpdater extends AbstractHelper
 
         $this->updateAddressData($shippingAddress, $details['shippingAddress']);
 
-        // PayPal's address supposes not saving against customer account
         $shippingAddress->setSaveInAddressBook(false);
         $shippingAddress->setSameAsBilling(false);
         $shippingAddress->unsCustomerAddressId();

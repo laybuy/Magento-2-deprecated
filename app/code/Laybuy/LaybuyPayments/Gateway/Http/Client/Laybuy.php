@@ -109,6 +109,8 @@ class Laybuy implements ClientInterface
     
     private $checkoutHelper;
     
+    public $last_error;
+    
     /**
      * @param Config $config
      * @param Session $checkoutSession
@@ -134,6 +136,8 @@ class Laybuy implements ClientInterface
         $this->config          = $config;
         $this->paymentHelper   = $paymentHelper;
         $this->checkoutHelper   = $checkoutHelper;
+    
+        $this->last_error = null;
     
         $this->logger->debug([__METHOD__ . ' TEST sandbox? ' => $this->config->getUseSandbox()]);
         $this->logger->debug([__METHOD__ . ' TEST sandbox_merchantid? ' => $this->config->getSandboxMerchantId()]);
@@ -240,6 +244,7 @@ class Laybuy implements ClientInterface
             if (!$body->paymentUrl) {
                 // $this->noLaybuyRedirectError($body);
                 $this->logger->debug(['FAILED TO GET returnURL' => $body]);
+                $this->last_error = $body->error;
                 return FALSE;
             }
         
@@ -251,6 +256,7 @@ class Laybuy implements ClientInterface
         else {
         
             $this->logger->debug(['FAILED TO GET returnURL' => $body]);
+            $this->last_error = $body->error;
             return FALSE;
             
         }
@@ -282,6 +288,7 @@ class Laybuy implements ClientInterface
             if (!$body->orderId) {
                 
                 $this->logger->debug(['FAILED confirm order' => $body]);
+                $this->last_error = $body->error;
                 return FALSE;
             }
             
@@ -292,6 +299,7 @@ class Laybuy implements ClientInterface
         else {
             
             $this->logger->debug(['FAILED confirm order' => $body]);
+            $this->last_error = $body->error;
             return FALSE;
             
         }

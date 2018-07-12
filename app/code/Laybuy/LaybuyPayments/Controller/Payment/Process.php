@@ -96,7 +96,7 @@ class Process extends Action {
     private $orderFactory;
     
     
-    private  $orderManagement;
+    private $orderManagement;
     
     protected $quoteRepository;
     
@@ -143,40 +143,60 @@ class Process extends Action {
     public function execute() {
         
         $this->logger->debug([__METHOD__ => 'start']);
-    
+        
         //status=CANCELLED | SUCCESS
-        $status = strtoupper($this->getRequest()->getParam('status') );
+        $status = strtoupper($this->getRequest()->getParam('status'));
         $token  = $this->getRequest()->getParam('token');
-    
+        
         /* @var $quote \Magento\Quote\Model\Quote */
         // try checkout session  -- look into fall backs?
         $quote = $this->checkoutSession->getQuote();
-    
-    
-         try {
-            if($status == Laybuy::SUCCESS ){
+        
+        
+        try {
+            if ($status == Laybuy::SUCCESS) {
                 if ($this->client->getCheckoutMethod($quote) === Onepage::METHOD_GUEST) {
                 
                 }
-        
+                
+                // move this higher
+                $laybuy_order_id = $this->client->laybuyConfirm($token);
+                
+                if (!$laybuy_order_id) {
+                    $this->messageManager->addNoticeMessage('Laybuy: There was an error' . ( ($this->client->last_error)?', '. $this->client->last_error : '' ) . '.' );
+                    $this->client->laybuyCancel($token);
+                    
+                    // we are done
+                    return $this->_redirect('checkout/cart', ['_secure' => TRUE]);
+                }
+                
+                
                 // setup order with the onepage helper
                 $this->checkout->setQuote($quote);
                 
                 $paymentData = [
                     "method" => "laybuy_laybuypayments",
                 ];
-        
+                
                 $this->checkout->savePayment($paymentData);
                 $this->checkout->saveOrder();
                 
-                $laybuy_order_id = $this->client->laybuyConfirm($token);
                 
-                if(!$laybuy_order_id){
-                    $this->messageManager->addNoticeMessage('Laybuy order confirmation error.');
-                }
-    
                 /* @var $order \Magento\Sales\Model\Order */
-                //$order  = $this->checkoutSession->getLastRealOrder();
+                $order = $this->checkoutSession->getLastRealOrder();
+                
+                $invoices = $order->getInvoiceCollection();
+                
+                $this->logger->debug(['order_id' => $order->getId()]);
+                $this->logger->debug(['invoices' => count($invoices)]);
+                
+                foreach ($invoices as $invoice) {
+                    /* @var $invoice \Magento\Sales\Model\Order\Invoice */
+                    /* $invoice->setState(2); */
+                    $invoice->pay();
+                    $invoice->save();
+                }
+                
                 $txn_id = $laybuy_order_id . '_' . $token;
                 
                 //TODO look into assigning a Txn ID on the order
@@ -197,7 +217,7 @@ class Process extends Action {
                 // the Neat this is that we done need to do anything
                 // there isn't an order yet
                 
-                if($status == Laybuy::CANCELLED ){
+                if ($status == Laybuy::CANCELLED) {
                     $this->messageManager->addNoticeMessage('Laybuy payment was Cancelled.');
                 }
                 else {
@@ -205,10 +225,9 @@ class Process extends Action {
                 }
                 
                 $this->client->laybuyCancel($token);
-    
+                
                 // fall though to cart redirect
             }
-            
             
             
         } catch (\Exception $e) {
@@ -216,7 +235,7 @@ class Process extends Action {
             $this->messageManager->addExceptionMessage($e, $e->getMessage());
             
         }
-    
+        
         return $this->_redirect('checkout/cart', ['_secure' => TRUE]);
         
     }
