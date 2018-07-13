@@ -17,8 +17,11 @@ use Magento\Payment\Model\Method\Logger;
 use Magento\Payment\Helper\Data as PaymentHelper;
 use Magento\Quote\Api\CartManagementInterface;
 use Magento\Checkout\Model\Type\Onepage;
-use Magento\Sales\Model\OrderFactory;
+
 use Magento\Sales\Model\Service\OrderService;
+use Magento\Sales\Model\Service\InvoiceService;
+use Magento\Sales\Model\Order\Payment\Transaction;
+use Magento\Sales\Model\Order\Payment\Transaction\BuilderInterface as TransactionBuilder;
 
 use Laybuy\LaybuyPayments\Gateway\Config\Config;
 use Laybuy\LaybuyPayments\Model\Helper;
@@ -90,11 +93,7 @@ class Process extends Action {
      */
     private $eventManager;
     
-    /**
-     * @var EventManager
-     */
-    private $orderFactory;
-    
+    private $transaction_builder;
     
     private $orderManagement;
     
@@ -106,6 +105,11 @@ class Process extends Action {
     
     protected $checkout;
     
+    /**
+     * @var InvoiceService
+     */
+    protected $invoice_management;
+    
     protected $client;
     
     
@@ -116,28 +120,32 @@ class Process extends Action {
         CheckoutSession $checkoutSession,
         Helper\OrderPlace $orderPlace,
         \Magento\Framework\Event\Manager $eventManager,
-        OrderFactory $order_factory,
+        TransactionBuilder $transaction_builder,
         Logger $logger,
         \Magento\Quote\Api\CartRepositoryInterface $quoteRepository,
         OrderService $orderManagement,
+        InvoiceService $invoice_management,
         PaymentHelper $paymentHelper,
         CartManagementInterface $cartManagement,
         Onepage $checkout,
         Laybuy $client
     ) {
         parent::__construct($context);
-        $this->config          = $config;
-        $this->customerSession = $customerSession;
-        $this->checkoutSession = $checkoutSession;
-        $this->orderPlace      = $orderPlace;
-        $this->logger          = $logger;
-        $this->eventManager    = $eventManager;
-        $this->orderFactory    = $order_factory;
-        $this->quoteRepository = $quoteRepository;
-        $this->paymentHelper   = $paymentHelper;
-        $this->cartManagement  = $cartManagement;
-        $this->checkout        = $checkout;
-        $this->client          = $client;
+        $this->config              = $config;
+        $this->customerSession     = $customerSession;
+        $this->checkoutSession     = $checkoutSession;
+        $this->orderPlace          = $orderPlace;
+        $this->logger              = $logger;
+        $this->eventManager        = $eventManager;
+        $this->transaction_builder = $transaction_builder;
+        $this->quoteRepository     = $quoteRepository;
+        $this->paymentHelper       = $paymentHelper;
+        $this->cartManagement      = $cartManagement;
+        $this->checkout            = $checkout;
+        $this->client              = $client;
+        
+        $this->invoice_management = $invoice_management;
+        
     }
     
     public function execute() {
@@ -156,14 +164,14 @@ class Process extends Action {
         try {
             if ($status == Laybuy::SUCCESS) {
                 if ($this->client->getCheckoutMethod($quote) === Onepage::METHOD_GUEST) {
-                
+                 // not needed
                 }
                 
                 // move this higher
                 $laybuy_order_id = $this->client->laybuyConfirm($token);
                 
                 if (!$laybuy_order_id) {
-                    $this->messageManager->addNoticeMessage('Laybuy: There was an error' . ( ($this->client->last_error)?', '. $this->client->last_error : '' ) . '.' );
+                    $this->messageManager->addNoticeMessage('Laybuy: There was an error' . (($this->client->last_error) ? ', ' . $this->client->last_error : '') . '.');
                     $this->client->laybuyCancel($token);
                     
                     // we are done
@@ -184,6 +192,8 @@ class Process extends Action {
                 
                 /* @var $order \Magento\Sales\Model\Order */
                 $order = $this->checkoutSession->getLastRealOrder();
+                $order->setTotalPaid($order->getTotalDue());
+                $order->save();
                 
                 $invoices = $order->getInvoiceCollection();
                 
@@ -193,21 +203,49 @@ class Process extends Action {
                 foreach ($invoices as $invoice) {
                     /* @var $invoice \Magento\Sales\Model\Order\Invoice */
                     /* $invoice->setState(2); */
+                    
+                    $this->invoice_management->setCapture($invoice->getId());
+                    
+                    if ($this->config->getAllowInvoiceNotify()) {
+                        $this->invoice_management->notify($invoice->getId());
+                    }
+                    
+                    /*$invoice->pay()*/
                     $invoice->pay();
                     $invoice->save();
                 }
                 
+                // mark the order as paid
                 $txn_id = $laybuy_order_id . '_' . $token;
                 
-                //TODO look into assigning a Txn ID on the order
-                //$order->getPayment()->setLastTransId($txn_id);
-                //$order->setCustomerNote('Paid with Laybuy: ' . $txn_id);
-                //$order->save();
+                try {
+                    // Prepare payment object
+                    $payment = $order->getPayment();
+                    $payment->setMethod(Config::CODE);
+                    /*$payment->setLastTransId($payment->);
+                    $payment->setTransactionId($paymentData['id']);
+                    $payment->setAdditionalInformation([Transaction::RAW_DETAILS => (array) $paymentData]);*/
+                    
+                    // Formatted price
+                    $formatedPrice = $order->getBaseCurrency()->formatTxt($order->getGrandTotal());
+                    
+                    // Prepare transaction
+                    $transaction = $this->transaction_builder->setPayment($payment)->setOrder($order)->setTransactionId($txn_id)->setFailSafe(TRUE)->build(Transaction::TYPE_CAPTURE);
+                    
+                    // Add transaction to payment
+                    $payment->addTransactionCommentsToOrder($transaction, __('The authorized amount is %1.', $formatedPrice));
+                    $payment->setParentTransactionId(NULL);
+                    
+                    // Save payment, transaction and order
+                    $payment->save();
+                    $transaction->save();
+                    $order->save();
+                    
+                    
+                } catch (Exception $e) {
+                    $this->messageManager->addExceptionMessage($e, $e->getMessage());
+                }
                 
-                $this->logger->debug(['txn_id' => $txn_id]);
-                
-                // TODO: look into why this causes the success page to bounce back to the cart
-                //$this->checkoutSession->clearQuote();
                 
                 return $this->_redirect('checkout/onepage/success', ['_secure' => TRUE]);
                 

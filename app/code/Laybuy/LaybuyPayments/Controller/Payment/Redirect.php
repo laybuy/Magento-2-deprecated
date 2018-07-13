@@ -191,7 +191,8 @@ class Redirect extends Action {
     protected function validateQuote(\Magento\Quote\Model\Quote $quote) {
         
         $this->logger->debug([ __METHOD__ . ' QUOTE IS: ' . get_class($quote)]);
-        if (!$quote || !$quote->getItemsCount()) {
+        
+        if ( !$quote || !$quote->getItemsCount() ) {
             throw new \InvalidArgumentException(__("We can't initialize checkout."));
         }
     }

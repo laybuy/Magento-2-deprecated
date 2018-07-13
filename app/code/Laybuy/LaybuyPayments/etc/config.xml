@@ -28,6 +28,7 @@
                 <paymentInfoKeys>result,token,orderId,amount,currency,merchantReference,processed</paymentInfoKeys>
                 <privateInfoKeys>token,processed</privateInfoKeys>
                 <payment_currency>NZD</payment_currency> <!-- default currency if none set -->
+                <allow_invoice_notify>1</allow_invoice_notify>
             </laybuy_laybuypayments>
         </payment>
     </default>

@@ -28,6 +28,8 @@ class Config extends \Magento\Payment\Gateway\Config\Config {
     
     const PAYMENT_CURRENCY = 'payment_currency';
     
+    const ALLOW_INVOICE_NOTIFY = 'allow_invoice_notify';
+    
     
     /**
      * @var Encryptor
@@ -135,4 +137,12 @@ class Config extends \Magento\Payment\Gateway\Config\Config {
         return $this->getValue(self::PAYMENT_METHOD_IMAGE);
     }
     
+    /**
+     * Get use payment method image flag
+     *
+     * @return string
+     */
+    public function getAllowInvoiceNotify() {
+        return $this->getValue(self::ALLOW_INVOICE_NOTIFY);
+    }
 }

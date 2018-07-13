@@ -14,7 +14,6 @@ use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Checkout\Model\Type\Onepage;
 use Magento\Customer\Model\Group;
 
-use Magento\Quote\Model\QuoteFactory;
 use Magento\Quote\Model\Quote;
 use Magento\Sales\Model\OrderFactory;
 
@@ -122,7 +121,6 @@ class Laybuy implements ClientInterface
         Config $config,
         CheckoutSession $checkoutSession,
         CustomerSession $customerSession,
-        QuoteFactory $quoteFactory,
         OrderFactory $orderFactory,
         Logger $logger,
         PaymentHelper $paymentHelper,
@@ -131,7 +129,6 @@ class Laybuy implements ClientInterface
         $this->logger          = $logger;
         $this->checkoutSession = $checkoutSession;
         $this->customerSession = $customerSession;
-        $this->quoteFactory    = $quoteFactory;
         $this->orderFactory    = $orderFactory;
         $this->config          = $config;
         $this->paymentHelper   = $paymentHelper;
@@ -552,24 +549,6 @@ class Laybuy implements ClientInterface
      */
     private function makeMerchantReference($quote_id){
         return $quote_id . '_' . uniqid();
-    }
-    
-    /**
-     * get the quote from $merchant_reference string with the quote ID embeded
-     *
-     * @param string $merchant_reference
-     *
-     * @return Quote | false
-     */
-    private function getQuoteFromMerchantReference($merchant_reference) {
-    
-        $quote_id = (int) preg_replace('/_.*$/', '', $merchant_reference);
-        if(!$quote_id){
-            return false;
-        }
-        
-        return $this->quoteFactory->create()->loadActive($quote_id);
-        
     }
     
     /**

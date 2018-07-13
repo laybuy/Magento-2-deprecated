@@ -29,6 +29,15 @@
                         <field id="active">1</field>
                     </depends>
                 </field>
+
+                <field id="allow_invoice_notify" translate="label" type="select" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Allow invoice Emails to be sent?</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <depends>
+                        <field id="active">1</field>
+                    </depends>
+                </field>
+
                 <field id="merchant_id" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Merchant Id</label>
                     <depends>
